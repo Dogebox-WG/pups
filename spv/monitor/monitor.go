@@ -18,6 +18,8 @@ type Metrics struct {
     Addresses        string `json:"addresses"`
     TransactionCount string `json:"transaction_count"`
     UnspentCount     string `json:"unspent_count"`
+    Transactions     string `json:"transactions"`
+    UTXOs            string `json:"utxos"`
 }
 
 func fetchEndpoint(endpoint string) (string, error) {
@@ -64,71 +66,96 @@ func collectMetrics() (Metrics, error) {
     if err != nil {
         return metrics, err
     }
-    chaintipLine := strings.TrimSpace(chaintipStr)
-    if strings.HasPrefix(chaintipLine, "Chain tip: ") {
-        metrics.Chaintip = strings.TrimPrefix(chaintipLine, "Chain tip: ")
-    } else {
-        metrics.Chaintip = chaintipLine // In case the format is different
-    }
+    metrics.Chaintip = parseSimpleMetric(chaintipStr, "Chain tip: ")
 
     // Fetch balance
     balanceStr, err := fetchEndpoint("/getBalance")
     if err != nil {
         return metrics, err
     }
-    balanceLine := strings.TrimSpace(balanceStr)
-    if strings.HasPrefix(balanceLine, "Wallet balance: ") {
-        metrics.Balance = strings.TrimPrefix(balanceLine, "Wallet balance: ")
-    } else {
-        metrics.Balance = balanceLine // In case the format is different
-    }
+    balance := parseSimpleMetric(balanceStr, "Wallet balance: ")
+    metrics.Balance = fmt.Sprintf("%sÐ", balance)
 
     // Fetch addresses
     addressesStr, err := fetchEndpoint("/getAddresses")
     if err != nil {
         return metrics, err
     }
-    var addresses []string
-    for _, line := range strings.Split(addressesStr, "\n") {
-        line = strings.TrimSpace(line)
-        if strings.HasPrefix(line, "address: ") {
-            address := strings.TrimPrefix(line, "address: ")
-            addresses = append(addresses, address)
-        }
-    }
-    if len(addresses) > 0 {
-        metrics.Addresses = strings.Join(addresses, "\n")
-    } else {
-        metrics.Addresses = "No addresses found"
-    }
+    metrics.Addresses = parseListMetric(addressesStr, "address: ")
 
-    // Fetch transaction count
+    // Fetch transactions
     transactionsStr, err := fetchEndpoint("/getTransactions")
     if err != nil {
         return metrics, err
     }
-    transactionCount := 0
-    for _, line := range strings.Split(transactionsStr, "\n") {
-        if strings.HasPrefix(line, "----------------------") {
-            transactionCount++
-        }
-    }
-    metrics.TransactionCount = fmt.Sprintf("%d", transactionCount)
+    metrics.Transactions, metrics.TransactionCount = parseUTXOsOrTxs(transactionsStr)
 
-    // Fetch unspent UTXO count
+    // Fetch UTXOs
     utxosStr, err := fetchEndpoint("/getUTXOs")
     if err != nil {
         return metrics, err
     }
-    unspentCount := 0
-    for _, line := range strings.Split(utxosStr, "\n") {
-        if strings.HasPrefix(line, "----------------------") {
-            unspentCount++
-        }
-    }
-    metrics.UnspentCount = fmt.Sprintf("%d", unspentCount)
+    metrics.UTXOs, metrics.UnspentCount = parseUTXOsOrTxs(utxosStr)
 
     return metrics, nil
+}
+
+// Helper to parse simple metrics
+func parseSimpleMetric(input, prefix string) string {
+    line := strings.TrimSpace(input)
+    if strings.HasPrefix(line, prefix) {
+        return strings.TrimPrefix(line, prefix)
+    }
+    return line
+}
+
+// Helper to parse lists of metrics
+func parseListMetric(input, prefix string) string {
+    var items []string
+    for _, line := range strings.Split(input, "\n") {
+        line = strings.TrimSpace(line)
+        if strings.HasPrefix(line, prefix) {
+            items = append(items, strings.TrimPrefix(line, prefix))
+        }
+    }
+    if len(items) > 0 {
+        return strings.Join(items, "\n")
+    }
+    return "No entries found"
+}
+
+// Helper to parse UTXOs or transactions
+func parseUTXOsOrTxs(input string) (string, string) {
+    var output []string
+    count := 0
+
+    parts := strings.Split(input, "----------------------")
+    for _, part := range parts {
+        part = strings.TrimSpace(part)
+        if part == "" {
+            continue
+        }
+
+        txid, amount, address := "", "", ""
+        lines := strings.Split(part, "\n")
+        for _, line := range lines {
+            line = strings.TrimSpace(line)
+            if strings.HasPrefix(line, "txid:") {
+                txid = strings.TrimSpace(strings.TrimPrefix(line, "txid:"))
+            } else if strings.HasPrefix(line, "amount:") {
+                amount = strings.TrimSpace(strings.TrimPrefix(line, "amount:"))
+            } else if strings.HasPrefix(line, "address:") {
+                address = strings.TrimSpace(strings.TrimPrefix(line, "address:"))
+            }
+        }
+
+        if txid != "" && amount != "" && address != "" {
+            output = append(output, fmt.Sprintf("%s %sÐ %s", txid, amount, address))
+            count++
+        }
+    }
+
+    return strings.Join(output, "\n"), fmt.Sprintf("%d", count)
 }
 
 func submitMetrics(metrics Metrics) {
@@ -136,23 +163,21 @@ func submitMetrics(metrics Metrics) {
         Timeout: 10 * time.Second,
     }
 
-    // Create a nested structure for the metrics data
     jsonData := map[string]interface{}{
         "chaintip":          map[string]interface{}{"value": metrics.Chaintip},
         "balance":           map[string]interface{}{"value": metrics.Balance},
         "addresses":         map[string]interface{}{"value": metrics.Addresses},
         "transaction_count": map[string]interface{}{"value": metrics.TransactionCount},
         "unspent_count":     map[string]interface{}{"value": metrics.UnspentCount},
+        "transactions":      map[string]interface{}{"value": metrics.Transactions},
+        "utxos":             map[string]interface{}{"value": metrics.UTXOs},
     }
 
-    // Marshal the data to JSON
     marshalledData, err := json.Marshal(jsonData)
     if err != nil {
         log.Printf("Error marshalling metrics: %v", err)
         return
     }
-
-    log.Printf("Submitting metrics: %+v", jsonData)
 
     url := fmt.Sprintf("http://%s:%s/dbx/metrics", os.Getenv("DBX_HOST"), os.Getenv("DBX_PORT"))
 
@@ -176,7 +201,6 @@ func submitMetrics(metrics Metrics) {
         body, _ := io.ReadAll(resp.Body)
         log.Printf("Unexpected status code when submitting metrics: %d", resp.StatusCode)
         log.Printf("Response body: %s", string(body))
-        return
     }
 }
 
@@ -198,7 +222,6 @@ func main() {
 
             log.Printf("Metrics: %+v", metrics)
             submitMetrics(metrics)
-
             log.Printf("----------------------------------------")
         }
     }

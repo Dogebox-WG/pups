@@ -8,30 +8,34 @@ let
   }) {
   };
 
+  awk = pkgs.gawk;
+  host = pkgs.host;
+
   spvnode = pkgs.writeScriptBin "run.sh" ''
     #!${pkgs.stdenv.shell}
 
-    # Generate a mnemonic if one doesn't exist
-    if [ ! -f "${storageDirectory}/1" ]; then
-        export MNEMONIC=$(${spvnode_bin}/bin/such -c generate_mnemonic | tee "${storageDirectory}/1")
+    # Ensure delegated.extended.key exists
+    if [ ! -f "${storageDirectory}/delegated.extended.key" ]; then
+        echo "Error: delegated.extended.key not found"
+        exit 1
     fi
 
-    # Update the DNS to resolve seed.multidoge.org
-    resolvectl dns eth0 1.1.1.1
+    # Derive a few external addresses from the delegated extended key
+    ADDRESS0=$(${spvnode_bin}/bin/such -c derive_child_keys -m "m/0/0" -p "$(cat ${storageDirectory}/delegated.extended.key)" | ${awk}/bin/awk '/p2pkh address:/ {print $3}')
+    ADDRESS1=$(${spvnode_bin}/bin/such -c derive_child_keys -m "m/0/1" -p "$(cat ${storageDirectory}/delegated.extended.key)" | ${awk}/bin/awk '/p2pkh address:/ {print $3}')
+    ADDRESS2=$(${spvnode_bin}/bin/such -c derive_child_keys -m "m/0/2" -p "$(cat ${storageDirectory}/delegated.extended.key)" | ${awk}/bin/awk '/p2pkh address:/ {print $3}')
 
-    # Scan in continuous (-c), block mode (-b) from the latest checkpoint (-p)
-    # Generate wallet with a mnemonic (-n) if one doesn't exist
-    # Store wallet in wallet.db (-w) and headers in header.db (-f)
-    # Connect to initial peer (-i) due to DNS
-    # Enable http server on port 8888 (-u) for endpoints
+    # Wait until DNS resolves 'seed.multidoge.org'
+    ${host}/bin/host -w seed.multidoge.org
+
+    # Run spvnode with the addresses
     ${spvnode_bin}/bin/spvnode \
       -c -b -p -l \
-      -n "$MNEMONIC" \
+      -a "$ADDRESS0 $ADDRESS1 $ADDRESS2" \
       -w "${storageDirectory}/wallet.db" \
       -f "${storageDirectory}/headers.db" \
-      -i "192.7.117.243" \
       -u "0.0.0.0:8888" \
-      scan 2>&1 | tee "${storageDirectory}/output.log"
+      scan 2>&1 | tee -a "${storageDirectory}/output.log"
   '';
 
   monitor = pkgs.buildGoModule {
@@ -41,7 +45,7 @@ let
     vendorHash = null;
 
     systemPackages = [ spvnode_bin ];
-    
+
     buildPhase = ''
       export GO111MODULE=off
       export GOCACHE=$(pwd)/.gocache
@@ -74,5 +78,5 @@ let
 
 in
 {
-  inherit spvnode monitor logger;
+  inherit spvnode monitor logger awk host;
 }
