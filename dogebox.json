@@ -20,6 +20,9 @@
     },
     {
       "location": "spv"
+    },
+    {
+      "location": "spv_enclave"
     }
   ]
 }

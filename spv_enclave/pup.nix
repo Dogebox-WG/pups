@@ -10,6 +10,8 @@ let
 
   awk = pkgs.gawk;
   host = pkgs.host;
+  util-linux = pkgs.util-linux;
+  optee_libdogecoin = pkgs."libdogecoin-optee-host";
 
   spvnode = pkgs.writeScriptBin "run.sh" ''
     #!${pkgs.stdenv.shell}
@@ -20,10 +22,21 @@ let
         exit 1
     fi
 
-    # Derive a few external addresses from the delegated extended key
-    ADDRESS0=$(${spvnode_bin}/bin/such -c derive_child_keys -m "m/0/0" -p "$(cat ${storageDirectory}/delegated.extended.key)" | ${awk}/bin/awk '/p2pkh address:/ {print $3}')
-    ADDRESS1=$(${spvnode_bin}/bin/such -c derive_child_keys -m "m/0/1" -p "$(cat ${storageDirectory}/delegated.extended.key)" | ${awk}/bin/awk '/p2pkh address:/ {print $3}')
-    ADDRESS2=$(${spvnode_bin}/bin/such -c derive_child_keys -m "m/0/2" -p "$(cat ${storageDirectory}/delegated.extended.key)" | ${awk}/bin/awk '/p2pkh address:/ {print $3}')
+    # Generate a mnemonic with the libdogecoin key management enclave
+    if [ ! -f "${storageDirectory}/present" ]; then
+        # YubiKey (TOTP) path
+        { sleep 1; printf '\n'; sleep 1; printf 'y\n'; } | \
+          SHELL=/run/current-system/sw/bin/bash \
+          ${util-linux}/bin/script -q -e -c "${optee_libdogecoin}/bin/optee_libdogecoin -c generate_mnemonic -z" /dev/null 2>&1 | tee "${storageDirectory}/present"
+
+        # Give the TEE a moment
+        sleep 1
+
+        # Derive a few addresses in the enclave from the mnemonic
+        ADDRESS0=$(${optee_libdogecoin}/bin/optee_libdogecoin -c generate_address -z -o 0 -l 0 -i 0 | ${awk}/bin/awk '/Address generated:/ {print $3}')
+        ADDRESS1=$(${optee_libdogecoin}/bin/optee_libdogecoin -c generate_address -z -o 0 -l 0 -i 1 | ${awk}/bin/awk '/Address generated:/ {print $3}')
+        ADDRESS2=$(${optee_libdogecoin}/bin/optee_libdogecoin -c generate_address -z -o 0 -l 0 -i 2 | ${awk}/bin/awk '/Address generated:/ {print $3}')
+    fi
 
     # Wait until DNS resolves 'seed.multidoge.org'
     ${host}/bin/host -w seed.multidoge.org
@@ -78,5 +91,20 @@ let
 
 in
 {
-  inherit spvnode monitor logger awk host;
+  pupEnclave = true;
+
+  imports = [ (pkgs.nixosModules.tee-supplicant) ];
+
+  inherit spvnode monitor logger awk host util-linux;
+
+  services.tee-supplicant = {
+    enable = true;
+    trustedApplications = [
+      "${pkgs.optee-os-rockchip-rk3588.devkit}/ta/023f8f1a-292a-432b-8fc4-de8471358067.ta"
+      "${pkgs.optee-os-rockchip-rk3588.devkit}/ta/80a4c275-0a47-4905-8285-1486a9771a08.ta"
+      "${pkgs.optee-os-rockchip-rk3588.devkit}/ta/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c.ta"
+      "${pkgs.optee-os-rockchip-rk3588.devkit}/ta/fd02c9da-306c-48c7-a49c-bbd827ae86ee.ta"
+      "${pkgs.libdogecoin-optee-ta}/ta/62d95dc0-7fc2-4cb3-a7f3-c13ae4e633c4.ta"
+    ];
+  };
 }
