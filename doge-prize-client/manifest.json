@@ -1,0 +1,71 @@
+{
+  "manifestVersion": 1,
+  "meta": {
+    "name": "doge-prize-client",
+    "version": "1.0.0",
+    "logoPath": "logo.png",
+    "shortDescription": "A Dogecoin prize system client",
+    "longDescription": "Doge prize client allows users to redeem Dogecoin prizes from Doge Prize Servers",
+  },
+  "config": {
+    "sections": null
+  },
+  "container": {
+    "build": {
+      "nixFile": "pup.nix",
+      "nixFileSha256": "06c424faabd296eb79a67a97d3d1811067999e552c119866b0dc1181479d6b75"
+    },
+    "services": [
+      {
+        "name": "doge-prize-client",
+        "command": {
+          "exec": "/bin/run.sh",
+          "cwd": "",
+          "env": null
+        }
+      }
+    ],
+    "exposes": [
+      {
+        "name": "public-port",
+        "type": "http",
+        "port": 3643,
+        "interfaces": [
+          "doge-prize-client-public"
+        ],
+        "listenOnHost": true,
+        "webUI": true
+      }
+    ],
+    "requiresInternet": true
+  },
+  "dependencies": [
+    {
+      "interfaceName": "core-rpc",
+      "interfaceVersion": "0.0.1",
+      "permissionGroups": [
+        "RPC"
+      ],
+      "source": {
+        "sourceLocation": "",
+        "pupName": "",
+        "pupVersion": "",
+        "pupLogoBase64": ""
+      }
+    },
+    {
+      "interfaceName": "core-zmq",
+      "interfaceVersion": "0.0.1",
+      "permissionGroups": [
+        "ZMQ"
+      ],
+      "source": {
+        "sourceLocation": "",
+        "pupName": "",
+        "pupVersion": "",
+        "pupLogoBase64": ""
+      }
+    }
+  ],
+  "metrics": null
+}
