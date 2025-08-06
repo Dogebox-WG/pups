@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "meta": {
     "name": "Dogecoin Core",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "logoPath": "logo.png",
     "shortDescription": "Run a full core node on your dogebox",
     "longDescription": "This pup launches and configures a full Dogecoin Core node on your dogebox, allowing you to sync the blockchain and contribute to the network.",
@@ -16,7 +16,7 @@
   "container": {
     "build": {
       "nixFile": "pup.nix",
-      "nixFileSha256": "e517f1dd2c8b1db6ac8d57c131c2e5deb4e9adb824c7f330074fdefaaef175c4"
+      "nixFileSha256": "3412b4519ec3d0fb540948678d7119e1f2ea39cb32e4da6775286b34a1c6c8da"
     },
     "services": [
       {
