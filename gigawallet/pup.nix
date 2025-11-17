@@ -14,7 +14,7 @@ let
   vendorHash = "sha256-mW5SStSabjWIlLWarI0OfyCTRWRQnEbk2BXabJCJ2h4";
 
   nativeBuildInputs = [
-    pkgs.go_1_22
+    pkgs.go_1_23
     pkgs.pkg-config
   ];
 
