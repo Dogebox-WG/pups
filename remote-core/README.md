@@ -18,20 +18,9 @@ curl --user "<your-username>:<your-password>" \
   http://<dogebox-host-ip>:22555/
 ```
 
-# Core RPC
+# Remote Core
 
 This pup provides authenticated external access to your Dogecoin Core node's RPC interface.
-
-## Why Use This?
-
-By default, Dogecoin Core's RPC is only accessible internally (by other pups on your Dogebox). If you need to connect external applications, wallets, or services to your Core node's RPC, install this pup.
-
-## How It Works
-
-- **Core pup** runs dogecoind with RPC enabled internally (no external access)
-- **Core RPC pup** provides an authenticated proxy to Core's RPC
-- External clients connect to Core RPC with your configured credentials
-- Core RPC validates credentials and forwards requests to Core
 
 ## Setup
 
@@ -47,15 +36,6 @@ By default, Dogecoin Core's RPC is only accessible internally (by other pups on 
 | RPC Username | Yes | Username for external RPC authentication |
 | RPC Password | Yes | Password for external RPC authentication |
 
-## Connecting
-
-Once configured, connect to your Dogebox's RPC at:
-```
-http://YOUR_DOGEBOX_IP:22555
-```
-
-Use Basic Authentication with your configured username and password.
-
 ## Security Notes
 
 - Always use strong, unique passwords for RPC access
@@ -63,3 +43,6 @@ Use Basic Authentication with your configured username and password.
 - Consider using Tailscale or similar for secure remote access instead of exposing RPC publicly
 - The RPC port is exposed on your local network by default
 
+## Upcoming Features
+
+- Next, this pup should be able to connect to a remotely running Core node, exposing it to other pups

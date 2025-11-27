@@ -28,7 +28,7 @@ func main() {
 		[]byte("dogebox_core_pup_temporary_static_username:dogebox_core_pup_temporary_static_password"),
 	)
 
-	log.Printf("Core RPC Proxy starting...")
+	log.Printf("Remote Core RPC Proxy starting...")
 	log.Printf("  Listen: %s", listenAddr)
 	log.Printf("  Upstream: %s", upstreamAddr)
 

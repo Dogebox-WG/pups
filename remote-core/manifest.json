@@ -1,11 +1,11 @@
 {
   "manifestVersion": 1,
   "meta": {
-    "name": "Core RPC",
+    "name": "Remote Core",
     "version": "0.0.1",
     "logoPath": "logo.png",
-    "shortDescription": "Expose Dogecoin Core RPC externally",
-    "longDescription": "This pup exposes your Dogecoin Core node's RPC interface externally with your own credentials. Install this if you need to connect external applications or services to your Core node's RPC.",
+    "shortDescription": "Access Core remotely",
+    "longDescription": "Use this pup to access the Dogecoin Core pup remotely",
     "upstreamVersions": null
   },
   "config": {
@@ -60,23 +60,7 @@
     ],
     "requiresInternet": true
   },
-  "interfaces": [
-    {
-      "name": "core-rpc-external",
-      "version": "0.0.1",
-      "permissionGroups": [
-        {
-          "name": "RPC",
-          "description": "External RPC access to the Dogecoin Core node",
-          "severity": 2,
-          "routes": [
-            "/*"
-          ],
-          "port": 0
-        }
-      ]
-    }
-  ],
+  "interfaces": [],
   "dependencies": [
     {
       "interfaceName": "core-rpc",
