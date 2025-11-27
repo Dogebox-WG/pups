@@ -1,15 +1,20 @@
 <div align="center">
   <img src="../docs/img/dogebox-logo.png" alt="Dogebox Logo"/>
-  <p>Core RPC</p>
+  <p>Remote Core</p>
 </div>
 
-This pup exposes your Dogecoin Core node's RPC interface externally via an authenticated proxy pup.
+This pup exposes your Dogecoin Core node's RPC and ZMQ interfaces externally via a proxy pup.
 
-- **Dependencies**: Requires a Dogecoin Core pup linked as the `core-rpc` provider.
-- **Config**: You choose an external `RPC_USERNAME` / `RPC_PASSWORD`; the proxy translates these to Core's internal credentials.
-- **Access**: Once running, RPC is available on port `22555` on your Dogebox host.
+- **Dependencies**: Requires a Dogecoin Core pup linked as the `core-rpc` and `core-zmq` provider.
+- **Config**: Enable RPC and/or ZMQ access, optionally configure RPC authentication credentials.
+- **Access**: Once running, RPC is available on port `22555` and ZMQ on port `28332` on your Dogebox host.
 
-Example call from a remote machine:
+## Features
+
+### Remote RPC
+Expose the Dogecoin Core RPC interface with optional authentication. Allows you to make RPC calls from remote machines.
+
+Example call from a remote machine (with authentication enabled):
 
 ```bash
 curl --user "<your-username>:<your-password>" \
@@ -18,31 +23,46 @@ curl --user "<your-username>:<your-password>" \
   http://<dogebox-host-ip>:22555/
 ```
 
-# Remote Core
-
-This pup provides authenticated external access to your Dogecoin Core node's RPC interface.
+### Remote ZMQ
+Expose the Dogecoin Core ZMQ interface for real-time notifications (blocks, transactions). This is useful for applications that need to subscribe to blockchain events.
 
 ## Setup
 
 1. Install the **Dogecoin Core** pup first
-2. Install this **Core RPC** pup
-3. Go to **Providers** and link Core RPC's `core-rpc` dependency to your Core pup
-4. Configure your RPC credentials in this pup's configuration
+2. Install this **Remote Core** pup
+3. Go to **Providers** and link Remote Core's dependencies to your Core pup:
+   - `core-rpc` for RPC access
+   - `core-zmq` for ZMQ access
+4. Configure which features to enable and set RPC credentials if desired
 
 ## Configuration
 
 | Setting | Required | Description |
 |---------|----------|-------------|
-| RPC Username | Yes | Username for external RPC authentication |
-| RPC Password | Yes | Password for external RPC authentication |
+| Enable Remote RPC | Yes | Enable/disable remote RPC access |
+| Enable Remote ZMQ | Yes | Enable/disable remote ZMQ access |
+| RPC Username | No | Username for external RPC authentication (optional) |
+| RPC Password | No | Password for external RPC authentication (optional) |
+
+**Note**: At least one of RPC or ZMQ must be enabled.
+
+If RPC credentials are left blank, RPC access will be unauthenticated (open to anyone who can reach the port).
+
+## Ports
+
+| Port | Protocol | Description |
+|------|----------|-------------|
+| 22555 | TCP/HTTP | Dogecoin Core RPC |
+| 28332 | TCP | Dogecoin Core ZMQ |
 
 ## Security Notes
 
-- Always use strong, unique passwords for RPC access
+- Always use strong, unique passwords for RPC access if enabling authentication
 - RPC access allows control over your node - only enable if needed
-- Consider using Tailscale or similar for secure remote access instead of exposing RPC publicly
-- The RPC port is exposed on your local network by default
+- ZMQ is read-only but exposes blockchain data in real-time
+- Consider using Tailscale or similar for secure remote access instead of exposing ports publicly
+- Both ports are exposed on your local network by default when enabled
 
 ## Upcoming Features
 
-- Next, this pup should be able to connect to a remotely running Core node, exposing it to other pups
+- Connect to a remotely running Core node, exposing it to other pups

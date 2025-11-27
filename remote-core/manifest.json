@@ -11,22 +11,36 @@
   "config": {
     "sections": [
       {
-        "name": "rpc",
-        "label": "RPC Authentication",
+        "name": "settings",
+        "label": "Remote Access Settings",
         "fields": [
+          {
+            "label": "Enable Remote RPC",
+            "name": "ENABLE_RPC",
+            "type": "toggle",
+            "required": true,
+            "help": "Enable remote RPC access to Dogecoin Core"
+          },
           {
             "label": "RPC Username",
             "name": "RPC_USERNAME",
             "type": "text",
-            "required": true,
-            "help": "Username for external RPC access"
+            "required": false,
+            "help": "Username for external RPC access (optional, leave blank for no authentication)"
           },
           {
             "label": "RPC Password",
             "name": "RPC_PASSWORD",
             "type": "password",
+            "required": false,
+            "help": "Password for external RPC access (optional, leave blank for no authentication)"
+          },
+          {
+            "label": "Enable Remote ZMQ",
+            "name": "ENABLE_ZMQ",
+            "type": "toggle",
             "required": true,
-            "help": "Password for external RPC access"
+            "help": "Enable remote ZMQ access to Dogecoin Core"
           }
         ]
       }
@@ -56,6 +70,15 @@
           "core-rpc-external"
         ],
         "listenOnHost": true
+      },
+      {
+        "name": "zmq-tcp",
+        "type": "tcp",
+        "port": 28332,
+        "interfaces": [
+          "core-zmq-external"
+        ],
+        "listenOnHost": true
       }
     ],
     "requiresInternet": true
@@ -67,6 +90,19 @@
       "interfaceVersion": "0.0.1",
       "permissionGroups": [
         "RPC"
+      ],
+      "source": {
+        "sourceLocation": "",
+        "pupName": "",
+        "pupVersion": "",
+        "pupLogoBase64": ""
+      }
+    },
+    {
+      "interfaceName": "core-zmq",
+      "interfaceVersion": "0.0.1",
+      "permissionGroups": [
+        "ZMQ"
       ],
       "source": {
         "sourceLocation": "",
