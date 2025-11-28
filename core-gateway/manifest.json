@@ -1,46 +1,32 @@
 {
   "manifestVersion": 1,
   "meta": {
-    "name": "Remote Core",
+    "name": "Dogecoin Core Gateway",
     "version": "0.0.1",
     "logoPath": "logo.png",
-    "shortDescription": "Access Core remotely",
-    "longDescription": "Use this pup to access the Dogecoin Core pup remotely",
+    "shortDescription": "Expose DogecoinCore to external apps",
+    "longDescription": "Allow external applications to use your Dogecoin Core Pup's RPC and ZMQ interfaces",
     "upstreamVersions": null
   },
   "config": {
     "sections": [
       {
         "name": "settings",
-        "label": "Remote Access Settings",
+        "label": "Gateway Settings",
         "fields": [
-          {
-            "label": "Enable Remote RPC",
-            "name": "ENABLE_RPC",
-            "type": "toggle",
-            "required": true,
-            "help": "Enable remote RPC access to Dogecoin Core"
-          },
           {
             "label": "RPC Username",
             "name": "RPC_USERNAME",
             "type": "text",
-            "required": false,
+            "required": true,
             "help": "Username for external RPC access (optional, leave blank for no authentication)"
           },
           {
             "label": "RPC Password",
             "name": "RPC_PASSWORD",
             "type": "password",
-            "required": false,
-            "help": "Password for external RPC access (optional, leave blank for no authentication)"
-          },
-          {
-            "label": "Enable Remote ZMQ",
-            "name": "ENABLE_ZMQ",
-            "type": "toggle",
             "required": true,
-            "help": "Enable remote ZMQ access to Dogecoin Core"
+            "help": "Password for external RPC access (optional, leave blank for no authentication)"
           }
         ]
       }

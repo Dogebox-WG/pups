@@ -1,0 +1,194 @@
+{
+  "manifestVersion": 1,
+  "meta": {
+    "name": "Dogecoin Core Remote",
+    "version": "0.0.1",
+    "logoPath": "logo.png",
+    "shortDescription": "Connect to a remote Dogecoin Core",
+    "longDescription": "Connect to a remotely running Dogecoin Core node and expose its RPC and ZMQ interfaces to other pups",
+    "upstreamVersions": null
+  },
+  "config": {
+    "showOnInstall": true,
+    "sections": [
+      {
+        "name": "connection",
+        "label": "Remote Core Connection",
+        "fields": [
+          {
+            "label": "Remote Host",
+            "name": "REMOTE_HOST",
+            "type": "text",
+            "required": true,
+            "help": "IP address or hostname of the remote Dogecoin Core node"
+          },
+          {
+            "label": "RPC Port",
+            "name": "REMOTE_RPC_PORT",
+            "type": "text",
+            "required": false,
+            "default": "22555",
+            "help": "RPC port of the remote Core node (default: 22555)"
+          },
+          {
+            "label": "RPC Username",
+            "name": "RPC_USERNAME",
+            "type": "text",
+            "required": true,
+            "help": "Username for RPC authentication with the remote Core node"
+          },
+          {
+            "label": "RPC Password",
+            "name": "RPC_PASSWORD",
+            "type": "password",
+            "required": true,
+            "help": "Password for RPC authentication with the remote Core node"
+          },
+          {
+            "label": "ZMQ Port",
+            "name": "REMOTE_ZMQ_PORT",
+            "type": "text",
+            "required": false,
+            "default": "28332",
+            "help": "ZMQ port of the remote Core node (default: 28332)"
+          }
+        ]
+      }
+    ]
+  },
+  "container": {
+    "build": {
+      "nixFile": "pup.nix",
+      "nixFileSha256": "af3d4bc3ef841e9c60b8572cd68fbdeb323a8c6de87b5ba9dfac045dc7b916e7"
+    },
+    "services": [
+      {
+        "name": "remote-proxy",
+        "command": {
+          "exec": "/bin/remote-proxy",
+          "cwd": "",
+          "env": null
+        }
+      },
+      {
+        "name": "remote-monitor",
+        "command": {
+          "exec": "/bin/remote-monitor",
+          "cwd": "",
+          "env": null
+        }
+      }
+    ],
+    "exposes": [
+      {
+        "name": "rpc",
+        "type": "http",
+        "port": 22555,
+        "interfaces": [
+          "core-rpc"
+        ],
+        "listenOnHost": false
+      },
+      {
+        "name": "rpc-tcp",
+        "type": "tcp",
+        "port": 22555,
+        "interfaces": [
+          "core-rpc"
+        ],
+        "listenOnHost": false
+      },
+      {
+        "name": "zmq",
+        "type": "tcp",
+        "port": 28332,
+        "interfaces": [
+          "core-zmq"
+        ],
+        "listenOnHost": false
+      }
+    ],
+    "requiresInternet": true
+  },
+  "interfaces": [
+    {
+      "name": "core-rpc",
+      "version": "0.0.1",
+      "permissionGroups": [
+        {
+          "name": "RPC",
+          "description": "Allows RPC access to the Dogecoin Core node",
+          "severity": 2,
+          "routes": [
+            "/*"
+          ],
+          "port": 0
+        }
+      ]
+    },
+    {
+      "name": "core-zmq",
+      "version": "0.0.1",
+      "permissionGroups": [
+        {
+          "name": "ZMQ",
+          "description": "Allows ZMQ access to the Dogecoin Core node",
+          "severity": 1,
+          "routes": null,
+          "port": 28332
+        }
+      ]
+    }
+  ],
+  "dependencies": [],
+  "metrics": [
+    {
+      "name": "remote_host",
+      "label": "Remote Host",
+      "type": "string",
+      "history": 1
+    },
+    {
+      "name": "chain",
+      "label": "Chain",
+      "type": "string",
+      "history": 1
+    },
+    {
+      "name": "blocks",
+      "label": "Block Height",
+      "type": "int",
+      "history": 30
+    },
+    {
+      "name": "headers",
+      "label": "Headers",
+      "type": "int",
+      "history": 30
+    },
+    {
+      "name": "difficulty",
+      "label": "Difficulty",
+      "type": "float",
+      "history": 30
+    },
+    {
+      "name": "verification_progress",
+      "label": "Verification progress",
+      "type": "string",
+      "history": 1
+    },
+    {
+      "name": "initial_block_download",
+      "label": "Initial Download",
+      "type": "string",
+      "history": 1
+    },
+    {
+      "name": "chain_size_human",
+      "label": "Blockchain Size",
+      "type": "string",
+      "history": 1
+    }
+  ]
+}

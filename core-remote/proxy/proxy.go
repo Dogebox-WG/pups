@@ -12,56 +12,71 @@ import (
 )
 
 var (
-	pupIP       string
-	enableRPC   bool
-	enableZMQ   bool
-	rpcUsername string
-	rpcPassword string
-	rpcUpstream string
-	zmqUpstream string
-	coreAuth    string
+	pupIP         string
+	remoteHost    string
+	remoteRPCPort string
+	remoteZMQPort string
+	rpcUsername   string
+	rpcPassword   string
+	rpcUpstream   string
+	zmqUpstream   string
+	remoteAuth    string
+	internalAuth  string
 )
 
 func main() {
 	pupIP = os.Getenv("DBX_PUP_IP")
-	enableRPC = os.Getenv("ENABLE_RPC") == "true"
-	enableZMQ = os.Getenv("ENABLE_ZMQ") == "true"
+
+	remoteHost = os.Getenv("REMOTE_HOST")
+	remoteRPCPort = os.Getenv("REMOTE_RPC_PORT")
+	remoteZMQPort = os.Getenv("REMOTE_ZMQ_PORT")
 	rpcUsername = os.Getenv("RPC_USERNAME")
 	rpcPassword = os.Getenv("RPC_PASSWORD")
 
-	rpcUpstream = "http://" + os.Getenv("DBX_IFACE_CORE_RPC_HOST") + ":" + os.Getenv("DBX_IFACE_CORE_RPC_PORT")
-	zmqUpstream = os.Getenv("DBX_IFACE_CORE_ZMQ_HOST") + ":" + os.Getenv("DBX_IFACE_CORE_ZMQ_PORT")
+	// Default ports if not specified
+	if remoteRPCPort == "" {
+		remoteRPCPort = "22555"
+	}
+	if remoteZMQPort == "" {
+		remoteZMQPort = "28332"
+	}
 
-	// Pre-compute Core's auth header
-	coreAuth = "Basic " + base64.StdEncoding.EncodeToString(
+	rpcUpstream = "http://" + remoteHost + ":" + remoteRPCPort
+	zmqUpstream = remoteHost + ":" + remoteZMQPort
+
+	// Pre-compute auth header for remote Core
+	if rpcUsername != "" && rpcPassword != "" {
+		remoteAuth = "Basic " + base64.StdEncoding.EncodeToString(
+			[]byte(rpcUsername+":"+rpcPassword),
+		)
+	}
+
+	// Internal auth that local pups will use (same as Core pup uses)
+	internalAuth = "Basic " + base64.StdEncoding.EncodeToString(
 		[]byte("dogebox_core_pup_temporary_static_username:dogebox_core_pup_temporary_static_password"),
 	)
 
-	log.Printf("Remote Core Proxy starting...")
-	log.Printf("  RPC Enabled: %v", enableRPC)
-	log.Printf("  ZMQ Enabled: %v", enableZMQ)
+	log.Printf("Dogecoin Core Remote Proxy starting...")
+	log.Printf("  Remote Host: %s", remoteHost)
+	log.Printf("  RPC upstream: %s", rpcUpstream)
+	log.Printf("  ZMQ upstream: %s", zmqUpstream)
 
-	if !enableRPC && !enableZMQ {
-		log.Fatal("ERROR: At least one of ENABLE_RPC or ENABLE_ZMQ must be true")
+	if remoteHost == "" {
+		log.Fatal("ERROR: REMOTE_HOST must be configured")
 	}
 
 	var wg sync.WaitGroup
+	wg.Add(2)
 
-	if enableRPC {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			startRPCProxy()
-		}()
-	}
+	go func() {
+		defer wg.Done()
+		startRPCProxy()
+	}()
 
-	if enableZMQ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			startZMQProxy()
-		}()
-	}
+	go func() {
+		defer wg.Done()
+		startZMQProxy()
+	}()
 
 	wg.Wait()
 }
@@ -69,12 +84,6 @@ func main() {
 func startRPCProxy() {
 	listenAddr := pupIP + ":22555"
 	log.Printf("RPC Proxy listening on %s -> %s", listenAddr, rpcUpstream)
-
-	if rpcUsername != "" && rpcPassword != "" {
-		log.Printf("RPC Authentication: enabled")
-	} else {
-		log.Printf("RPC Authentication: disabled (no credentials configured)")
-	}
 
 	http.HandleFunc("/", rpcProxyHandler)
 	log.Fatal(http.ListenAndServe(listenAddr, nil))
@@ -135,32 +144,37 @@ func handleZMQConnection(clientConn net.Conn) {
 func rpcProxyHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("RPC Request: %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
 
-	// Validate incoming auth only if credentials are configured
-	if rpcUsername != "" && rpcPassword != "" {
-		auth := r.Header.Get("Authorization")
-		if !validateAuth(auth) {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Dogecoin RPC"`)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
+	// Validate incoming auth from local pups
+	auth := r.Header.Get("Authorization")
+	if !validateInternalAuth(auth) {
+		w.Header().Set("WWW-Authenticate", `Basic realm="Dogecoin RPC"`)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
 	}
 
-	// Create upstream request
+	// Create upstream request to remote Core
 	proxyReq, err := http.NewRequest(r.Method, rpcUpstream+r.URL.Path, r.Body)
 	if err != nil {
 		http.Error(w, "Failed to create request", http.StatusInternalServerError)
 		return
 	}
 
-	// Copy headers, replace auth with Core's credentials
+	// Copy headers
 	for key, values := range r.Header {
 		for _, value := range values {
 			proxyReq.Header.Add(key, value)
 		}
 	}
-	proxyReq.Header.Set("Authorization", coreAuth)
 
-	// Forward request
+	// Replace auth with remote Core's credentials
+	if remoteAuth != "" {
+		proxyReq.Header.Set("Authorization", remoteAuth)
+	} else {
+		// No remote auth configured, remove the header
+		proxyReq.Header.Del("Authorization")
+	}
+
+	// Forward request to remote Core
 	client := &http.Client{}
 	resp, err := client.Do(proxyReq)
 	if err != nil {
@@ -180,7 +194,7 @@ func rpcProxyHandler(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, resp.Body)
 }
 
-func validateAuth(auth string) bool {
+func validateInternalAuth(auth string) bool {
 	if !strings.HasPrefix(auth, "Basic ") {
 		return false
 	}
@@ -192,5 +206,7 @@ func validateAuth(auth string) bool {
 	if len(parts) != 2 {
 		return false
 	}
-	return parts[0] == rpcUsername && parts[1] == rpcPassword
+	// Validate against the internal static credentials
+	return parts[0] == "dogebox_core_pup_temporary_static_username" &&
+		parts[1] == "dogebox_core_pup_temporary_static_password"
 }
