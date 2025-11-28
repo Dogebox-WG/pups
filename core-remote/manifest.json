@@ -143,6 +143,12 @@
   "dependencies": [],
   "metrics": [
     {
+      "name": "status",
+      "label": "Status",
+      "type": "string",
+      "history": 1
+    },
+    {
       "name": "remote_host",
       "label": "Remote Host",
       "type": "string",

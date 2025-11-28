@@ -68,6 +68,7 @@ func main() {
 		info, err := getBlockchainInfo()
 		if err != nil {
 			log.Printf("Error getting blockchain info from %s: %v", remoteHost, err)
+			submitDisconnectedStatus()
 			continue
 		}
 
@@ -144,6 +145,7 @@ func submitMetrics(info BlockchainInfo) {
 	chainSize := bytesToHuman(info.SizeOnDisk)
 
 	jsonData := map[string]interface{}{
+		"status":                 map[string]interface{}{"value": "Connected"},
 		"remote_host":            map[string]interface{}{"value": remoteHost},
 		"chain":                  map[string]interface{}{"value": info.Chain},
 		"blocks":                 map[string]interface{}{"value": info.Blocks},
@@ -187,6 +189,49 @@ func submitMetrics(info BlockchainInfo) {
 	}
 
 	log.Println("Metrics submitted successfully.")
+}
+
+func submitDisconnectedStatus() {
+	client := &http.Client{}
+
+	jsonData := map[string]interface{}{
+		"status":      map[string]interface{}{"value": "Disconnected"},
+		"remote_host": map[string]interface{}{"value": remoteHost},
+	}
+
+	marshalledData, err := json.Marshal(jsonData)
+	if err != nil {
+		log.Printf("Error marshalling disconnected status: %v", err)
+		return
+	}
+
+	log.Printf("Submitting disconnected status: %v", jsonData)
+
+	url := fmt.Sprintf("http://%s:%s/dbx/metrics", os.Getenv("DBX_HOST"), os.Getenv("DBX_PORT"))
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(marshalledData))
+	if err != nil {
+		log.Printf("Error creating request: %v", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error sending disconnected status: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Unexpected status code when submitting disconnected status: %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("Response body: %s", string(body))
+		return
+	}
+
+	log.Println("Disconnected status submitted successfully.")
 }
 
 func bytesToHuman(bytes int64) string {
