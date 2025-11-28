@@ -64,28 +64,25 @@ func main() {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			info, err := getBlockchainInfo()
-			if err != nil {
-				log.Printf("Error getting blockchain info from %s: %v", remoteHost, err)
-				continue
-			}
-
-			log.Printf("Connected to: %s", remoteHost)
-			log.Printf("Chain: %s", info.Chain)
-			log.Printf("Blocks: %d", info.Blocks)
-			log.Printf("Headers: %d", info.Headers)
-			log.Printf("Difficulty: %f", info.Difficulty)
-			log.Printf("Verification Progress: %f", info.VerificationProgress)
-			log.Printf("Initial Block Download: %t", info.InitialBlockDownload)
-			log.Printf("Size on Disk: %d", info.SizeOnDisk)
-
-			submitMetrics(info)
-
-			log.Printf("----------------------------------------")
+	for range ticker.C {
+		info, err := getBlockchainInfo()
+		if err != nil {
+			log.Printf("Error getting blockchain info from %s: %v", remoteHost, err)
+			continue
 		}
+
+		log.Printf("Connected to: %s", remoteHost)
+		log.Printf("Chain: %s", info.Chain)
+		log.Printf("Blocks: %d", info.Blocks)
+		log.Printf("Headers: %d", info.Headers)
+		log.Printf("Difficulty: %f", info.Difficulty)
+		log.Printf("Verification Progress: %f", info.VerificationProgress)
+		log.Printf("Initial Block Download: %t", info.InitialBlockDownload)
+		log.Printf("Size on Disk: %d", info.SizeOnDisk)
+
+		submitMetrics(info)
+
+		log.Printf("----------------------------------------")
 	}
 }
 
