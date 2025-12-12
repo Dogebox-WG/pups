@@ -23,6 +23,12 @@
     },
     {
       "location": "spv_enclave"
+    },
+    {
+      "location": "core-remote"
+    },
+    {
+      "location": "core-gateway"
     }
   ]
 }

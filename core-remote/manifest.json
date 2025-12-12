@@ -1,59 +1,85 @@
 {
   "manifestVersion": 1,
   "meta": {
-    "name": "Dogecoin Core",
-    "version": "0.0.9",
+    "name": "Dogecoin Core Remote",
+    "version": "0.0.1",
     "logoPath": "logo.png",
-    "shortDescription": "Run a full core node on your dogebox",
-    "longDescription": "This pup launches and configures a full Dogecoin Core node on your dogebox, allowing you to sync the blockchain and contribute to the network.",
-    "upstreamVersions": {
-      "Core": "v1.14.9"
-    }
+    "shortDescription": "Connect to a remote Dogecoin Core",
+    "longDescription": "Connect to a remotely running Dogecoin Core node and expose its RPC and ZMQ interfaces to other pups",
+    "upstreamVersions": null
   },
   "config": {
-    "sections": null
+    "showOnInstall": true,
+    "sections": [
+      {
+        "name": "connection",
+        "label": "Remote Core Connection",
+        "fields": [
+          {
+            "label": "Remote Host",
+            "name": "REMOTE_HOST",
+            "type": "text",
+            "required": true,
+            "help": "IP address or hostname of the remote Dogecoin Core node"
+          },
+          {
+            "label": "RPC Port",
+            "name": "REMOTE_RPC_PORT",
+            "type": "text",
+            "required": false,
+            "default": "22555",
+            "help": "RPC port of the remote Core node (default: 22555)"
+          },
+          {
+            "label": "RPC Username",
+            "name": "RPC_USERNAME",
+            "type": "text",
+            "required": true,
+            "help": "Username for RPC authentication with the remote Core node"
+          },
+          {
+            "label": "RPC Password",
+            "name": "RPC_PASSWORD",
+            "type": "password",
+            "required": true,
+            "help": "Password for RPC authentication with the remote Core node"
+          },
+          {
+            "label": "ZMQ Port",
+            "name": "REMOTE_ZMQ_PORT",
+            "type": "text",
+            "required": false,
+            "default": "28332",
+            "help": "ZMQ port of the remote Core node (default: 28332)"
+          }
+        ]
+      }
+    ]
   },
   "container": {
     "build": {
       "nixFile": "pup.nix",
-      "nixFileSha256": "1a0707df4e2add8a95c2d616b38069b6fbc6172822252a81cfe6dfebf6651ff6"
+      "nixFileSha256": "af3d4bc3ef841e9c60b8572cd68fbdeb323a8c6de87b5ba9dfac045dc7b916e7"
     },
     "services": [
       {
-        "name": "dogecoind",
+        "name": "remote-proxy",
         "command": {
-          "exec": "/bin/run.sh",
+          "exec": "/bin/remote-proxy",
           "cwd": "",
           "env": null
         }
       },
       {
-        "name": "monitor",
+        "name": "remote-monitor",
         "command": {
-          "exec": "/bin/monitor",
-          "cwd": "",
-          "env": null
-        }
-      },
-      {
-        "name": "logger",
-        "command": {
-          "exec": "/bin/logger",
+          "exec": "/bin/remote-monitor",
           "cwd": "",
           "env": null
         }
       }
     ],
     "exposes": [
-      {
-        "name": "public-port",
-        "type": "tcp",
-        "port": 22556,
-        "interfaces": [
-          "core-network"
-        ],
-        "listenOnHost": true
-      },
       {
         "name": "rpc",
         "type": "http",
@@ -112,23 +138,22 @@
           "port": 28332
         }
       ]
-    },
-    {
-      "name": "core-network",
-      "version": "0.0.1",
-      "permissionGroups": [
-        {
-          "name": "Network",
-          "description": "Allows access to the Dogecoin Core node's network port",
-          "severity": 2,
-          "routes": null,
-          "port": 22556
-        }
-      ]
     }
   ],
-  "dependencies": null,
+  "dependencies": [],
   "metrics": [
+    {
+      "name": "status",
+      "label": "Status",
+      "type": "string",
+      "history": 1
+    },
+    {
+      "name": "remote_host",
+      "label": "Remote Host",
+      "type": "string",
+      "history": 1
+    },
     {
       "name": "chain",
       "label": "Chain",

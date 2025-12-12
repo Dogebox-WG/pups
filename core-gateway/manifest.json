@@ -1,0 +1,102 @@
+{
+  "manifestVersion": 1,
+  "meta": {
+    "name": "Dogecoin Core Gateway",
+    "version": "0.0.1",
+    "logoPath": "logo.png",
+    "shortDescription": "Expose DogecoinCore to external apps",
+    "longDescription": "Allow external applications to use your Dogecoin Core Pup's RPC and ZMQ interfaces",
+    "upstreamVersions": null
+  },
+  "config": {
+    "sections": [
+      {
+        "name": "settings",
+        "label": "Gateway Settings",
+        "fields": [
+          {
+            "label": "RPC Username",
+            "name": "RPC_USERNAME",
+            "type": "text",
+            "required": true,
+            "help": "Username for external RPC access (optional, leave blank for no authentication)"
+          },
+          {
+            "label": "RPC Password",
+            "name": "RPC_PASSWORD",
+            "type": "password",
+            "required": true,
+            "help": "Password for external RPC access (optional, leave blank for no authentication)"
+          }
+        ]
+      }
+    ]
+  },
+  "container": {
+    "build": {
+      "nixFile": "pup.nix",
+      "nixFileSha256": "b8ec108da0f460ff15fb82ee1cb91e25a3556ce2feeb6145c661e545177ca7f7"
+    },
+    "services": [
+      {
+        "name": "rpc-proxy",
+        "command": {
+          "exec": "/bin/rpc-proxy",
+          "cwd": "",
+          "env": null
+        }
+      }
+    ],
+    "exposes": [
+      {
+        "name": "rpc-tcp",
+        "type": "tcp",
+        "port": 22555,
+        "interfaces": [
+          "core-rpc-external"
+        ],
+        "listenOnHost": true
+      },
+      {
+        "name": "zmq-tcp",
+        "type": "tcp",
+        "port": 28332,
+        "interfaces": [
+          "core-zmq-external"
+        ],
+        "listenOnHost": true
+      }
+    ],
+    "requiresInternet": true
+  },
+  "interfaces": [],
+  "dependencies": [
+    {
+      "interfaceName": "core-rpc",
+      "interfaceVersion": "0.0.1",
+      "permissionGroups": [
+        "RPC"
+      ],
+      "source": {
+        "sourceLocation": "",
+        "pupName": "",
+        "pupVersion": "",
+        "pupLogoBase64": ""
+      }
+    },
+    {
+      "interfaceName": "core-zmq",
+      "interfaceVersion": "0.0.1",
+      "permissionGroups": [
+        "ZMQ"
+      ],
+      "source": {
+        "sourceLocation": "",
+        "pupName": "",
+        "pupVersion": "",
+        "pupLogoBase64": ""
+      }
+    }
+  ],
+  "metrics": null
+}
