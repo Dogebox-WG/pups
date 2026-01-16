@@ -2,16 +2,16 @@
 
 let
   storageDirectory = "/storage";
-  spvnode_bin = pkgs.callPackage (pkgs.fetchurl {
-    url = "https://raw.githubusercontent.com/Dogebox-WG/dogebox-nur-packages/77dc446e14e1fb691e67b186da013ebef92c7ca7/pkgs/libdogecoin/default.nix";
-    sha256 = "sha256-9RNu1IA703gNqnpDdZ6feEI5WOBDjsOvdRaWeJBNxJg=";
+  libdogecoin = pkgs.callPackage (pkgs.fetchurl {
+    url = "https://raw.githubusercontent.com/Dogebox-WG/dogebox-nur-packages/3fdf3114851f35a5b758cbeb08287d6cdb915eb2/pkgs/libdogecoin/default.nix";
+    sha256 = "sha256-Rx6w9RKFFkJKOhk9o/aQUDtfnteTMe2Rme+kvnGQr2k=";
   }) {
   };
 
   awk = pkgs.gawk;
   host = pkgs.host;
   util-linux = pkgs.util-linux;
-  optee_libdogecoin = pkgs."libdogecoin-optee-host";
+  optee_libdogecoin = libdogecoin."libdogecoin-optee-host";
 
   spvnode = pkgs.writeScriptBin "run.sh" ''
     #!${pkgs.stdenv.shell}
@@ -42,7 +42,7 @@ let
     ${host}/bin/host -w seed.multidoge.org
 
     # Run spvnode with the addresses
-    ${spvnode_bin}/bin/spvnode \
+    ${libdogecoin}/bin/spvnode \
       -c -b -p -l \
       -a "$ADDRESS0 $ADDRESS1 $ADDRESS2" \
       -w "${storageDirectory}/wallet.db" \
@@ -57,12 +57,12 @@ let
     src = ./monitor;
     vendorHash = null;
 
-    systemPackages = [ spvnode_bin ];
+    systemPackages = [ libdogecoin ];
 
     buildPhase = ''
       export GO111MODULE=off
       export GOCACHE=$(pwd)/.gocache
-      go build -ldflags "-X main.pathToSpvnode=${spvnode_bin}" -o monitor monitor.go
+      go build -ldflags "-X main.pathToSpvnode=${libdogecoin}" -o monitor monitor.go
     '';
 
     installPhase = ''
@@ -104,7 +104,7 @@ in
       "${pkgs.optee-os-rockchip-rk3588.devkit}/ta/80a4c275-0a47-4905-8285-1486a9771a08.ta"
       "${pkgs.optee-os-rockchip-rk3588.devkit}/ta/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c.ta"
       "${pkgs.optee-os-rockchip-rk3588.devkit}/ta/fd02c9da-306c-48c7-a49c-bbd827ae86ee.ta"
-      "${pkgs.libdogecoin-optee-ta}/ta/62d95dc0-7fc2-4cb3-a7f3-c13ae4e633c4.ta"
+      "${libdogecoin."libdogecoin-optee-ta"}/ta/62d95dc0-7fc2-4cb3-a7f3-c13ae4e633c4.ta"
     ];
   };
 }
