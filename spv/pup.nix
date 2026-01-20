@@ -25,8 +25,10 @@ let
     ADDRESS1=$(${spvnode_bin}/bin/such -c derive_child_keys -m "m/0/1" -p "$(cat ${storageDirectory}/delegated.extended.key)" | ${awk}/bin/awk '/p2pkh address:/ {print $3}')
     ADDRESS2=$(${spvnode_bin}/bin/such -c derive_child_keys -m "m/0/2" -p "$(cat ${storageDirectory}/delegated.extended.key)" | ${awk}/bin/awk '/p2pkh address:/ {print $3}')
 
-    # Wait until DNS resolves 'seed.multidoge.org'
+    # Wait until DNS resolves 'seed.multidoge.org' and 'seed2.multidoge.org'
+    sleep 1
     ${host}/bin/host -w seed.multidoge.org
+    ${host}/bin/host -w seed2.multidoge.org
 
     # Run spvnode with the addresses
     ${spvnode_bin}/bin/spvnode \
