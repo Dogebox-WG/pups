@@ -13,6 +13,9 @@
       "location": "dogenet"
     },
     {
+      "location": "indexer"
+    },
+    {
       "location": "dogemap"
     },
     {

@@ -1,0 +1,141 @@
+{
+  "manifestVersion": 1,
+  "meta": {
+    "name": "Indexer",
+    "version": "0.0.1",
+    "logoPath": "logo.png",
+    "shortDescription": "Index UTXOs and balances per address",
+    "longDescription": "Indexer follows the Dogecoin chain through Core RPC and ZMQ, stores address-level UTXO state in managed Postgres storage, maintains a cached balances table, refreshes Core sync heights in memory, and exposes a small HTTP API for balances, UTXOs, height, blocks, and health.",
+    "upstreamVersions": null
+  },
+  "config": {
+    "showOnInstall": true,
+    "sections": [
+      {
+        "name": "indexer",
+        "label": "Indexer Settings",
+        "fields": [
+          {
+            "label": "Cache Balances",
+            "name": "CACHE_BALANCES",
+            "type": "toggle",
+            "required": false,
+            "default": "true",
+            "help": "Maintain a Postgres-backed balances table for faster balance API responses. On the current mainnet test database this adds about 3.4 GB."
+          },
+          {
+            "label": "Starting Height",
+            "name": "STARTING_HEIGHT",
+            "type": "number",
+            "required": false,
+            "default": "0",
+            "min": 0,
+            "help": "Starting block height used when the local index database is empty"
+          }
+        ]
+      }
+    ]
+  },
+  "container": {
+    "build": {
+      "nixFile": "pup.nix",
+      "nixFileSha256": "41989650952275c9fab7ddb9d889ab6290db235262ff47fad6bd0d4b157db3e7"
+    },
+    "services": [
+      {
+        "name": "indexer",
+        "command": {
+          "exec": "/bin/run.sh",
+          "cwd": "",
+          "env": null
+        }
+      },
+      {
+        "name": "monitor",
+        "command": {
+          "exec": "/bin/monitor",
+          "cwd": "",
+          "env": null
+        }
+      }
+    ],
+    "exposes": [
+      {
+        "name": "api",
+        "type": "http",
+        "port": 8000,
+        "interfaces": [
+          "indexer-api"
+        ],
+        "listenOnHost": false,
+        "webUI": false
+      }
+    ],
+    "requiresInternet": false
+  },
+  "interfaces": [
+    {
+      "name": "indexer-api",
+      "version": "0.0.2",
+      "permissionGroups": [
+        {
+          "name": "API",
+          "description": "Allows access to the Indexer HTTP API",
+          "severity": 1,
+          "routes": [
+            "/*"
+          ],
+          "port": 0
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "interfaceName": "core-rpc",
+      "interfaceVersion": "0.0.1",
+      "permissionGroups": [
+        "RPC"
+      ],
+      "source": {
+        "sourceLocation": "",
+        "pupName": "",
+        "pupVersion": "",
+        "pupLogoBase64": ""
+      }
+    },
+    {
+      "interfaceName": "core-zmq",
+      "interfaceVersion": "0.0.1",
+      "permissionGroups": [
+        "ZMQ"
+      ],
+      "source": {
+        "sourceLocation": "",
+        "pupName": "",
+        "pupVersion": "",
+        "pupLogoBase64": ""
+      }
+    }
+  ],
+  "metrics": [
+    {
+      "name": "core_status",
+      "label": "Core Connection",
+      "type": "string",
+      "history": 1
+    },
+    {
+      "name": "indexed_height",
+      "label": "Indexed Height",
+      "type": "int",
+      "history": 30
+    },
+    {
+      "name": "core_height",
+      "label": "Core Height",
+      "type": "int",
+      "history": 30
+    }
+  ]
+}
