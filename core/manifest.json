@@ -2,21 +2,154 @@
   "manifestVersion": 1,
   "meta": {
     "name": "Dogecoin Core",
-    "version": "0.0.10",
+    "version": "0.0.11",
     "logoPath": "logo.png",
     "shortDescription": "Run a full core node on your dogebox",
-    "longDescription": "This pup launches and configures a full Dogecoin Core node on your dogebox, allowing you to sync the blockchain and contribute to the network.",
+    "longDescription": "This pup launches and configures a full Dogecoin Core node on your dogebox, allowing you to sync the blockchain and contribute to the network.\n\nIMPORTANT: After saving configuration changes, you must DISABLE and then ENABLE the CORE pup to apply the new settings.",
     "upstreamVersions": {
       "Core": "v1.14.9"
     }
   },
   "config": {
-    "sections": null
+    "sections": [
+      {
+        "name": "Node Features",
+        "description": "Enable/disable node features and indexing. After saving changes below, disable and re-enable this pup to apply settings.",
+        "fields": [
+          {
+            "name": "ENABLE_TXINDEX",
+            "label": "Enable Transaction Index",
+            "type": "toggle",
+            "default": true
+          }
+        ]
+      },
+      {
+        "name": "RPC",
+        "description": "RPC server configuration",
+        "fields": [
+          {
+            "name": "ENABLE_RPC",
+            "label": "Enable RPC Server",
+            "type": "toggle",
+            "default": true
+          },
+          {
+            "name": "RPC_USERNAME",
+            "label": "RPC Username",
+            "type": "text",
+            "default": "dogebox_core_pup_temporary_static_username"
+          },
+          {
+            "name": "RPC_PASSWORD",
+            "label": "RPC Password",
+            "type": "password",
+            "default": "dogebox_core_pup_temporary_static_password"
+          },
+          {
+            "name": "RPC_PORT",
+            "label": "RPC Port",
+            "type": "text",
+            "default": "22555"
+          },
+          {
+            "name": "RPC_ALLOWED_IPS",
+            "label": "RPC Allowed IPs (comma-separated)",
+            "type": "text",
+            "default": "0.0.0.0/0"
+          },
+          {
+            "name": "RPCBIND_ADDRESS",
+            "label": "RPC Bind Address (optional, overrides auto)",
+            "type": "text",
+            "default": ""
+          }
+        ]
+      },
+      {
+        "name": "Network",
+        "description": "P2P network and connection settings",
+        "fields": [
+          {
+            "name": "PORT",
+            "label": "P2P Port",
+            "type": "text",
+            "default": "22556"
+          },
+          {
+            "name": "MAXCONNECTIONS",
+            "label": "Max Connections",
+            "type": "text",
+            "default": "125"
+          }
+        ]
+      },
+      {
+        "name": "ZMQ",
+        "description": "ZMQ message queue endpoints",
+        "fields": [
+          {
+            "name": "ENABLE_ZMQ",
+            "label": "Enable ZMQ",
+            "type": "toggle",
+            "default": true
+          },
+          {
+            "name": "ZMQ_PUBHASHTX",
+            "label": "ZMQ Publish Hash TX",
+            "type": "text",
+            "default": ""
+          },
+          {
+            "name": "ZMQ_PUBRAWBLOCK",
+            "label": "ZMQ Publish Raw Block",
+            "type": "text",
+            "default": ""
+          },
+          {
+            "name": "ZMQ_PUBRAWTX",
+            "label": "ZMQ Publish Raw TX",
+            "type": "text",
+            "default": ""
+          }
+        ]
+      },
+      {
+        "name": "Advanced",
+        "description": "Advanced performance and debugging options",
+        "fields": [
+          {
+            "name": "PRUNE",
+            "label": "Prune (MB, 0 to disable)",
+            "type": "text",
+            "default": "0"
+          },
+          {
+            "name": "DBCACHE",
+            "label": "Database Cache (MB)",
+            "type": "text",
+            "default": "300"
+          },
+          {
+            "name": "DEBUG",
+            "label": "Debug Level",
+            "type": "text",
+            "default": ""
+          },
+          {
+            "name": "UACOMMENT",
+            "label": "User Agent Comment",
+            "type": "text",
+            "default": ""
+          }
+        ]
+      }
+    ]
   },
   "container": {
     "build": {
       "nixFile": "pup.nix",
-      "nixFileSha256": "3f903cfaef48e5416b47719f8103fba7a9498e41e6137f6c89c225111a7bd6bf"
+      "nixFileSha256": "ZRyZ1ecKKRe0+UR5Jaq6kazke9/nJvL9yS1i4F5ajak="
     },
     "services": [
       {
@@ -56,21 +189,12 @@
       },
       {
         "name": "rpc",
-        "type": "http",
-        "port": 22555,
-        "interfaces": [
-          "core-rpc"
-        ],
-        "listenOnHost": false
-      },
-      {
-        "name": "rpc-tcp",
         "type": "tcp",
         "port": 22555,
         "interfaces": [
           "core-rpc"
         ],
-        "listenOnHost": false
+        "listenOnHost": true
       },
       {
         "name": "zmq",
