@@ -26,8 +26,10 @@ let
     fi
     
     ${dogecoind_bin}/bin/dogecoind \
+      -uacomment=DogeBox \
       -port=22556 \
       -datadir=${storageDirectory} \
+      -txindex=1 \
       -rpc=1 \
       -rpcuser=$RPCUSER \
       -rpcpassword=$RPCPASS \
