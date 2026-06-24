@@ -4,6 +4,7 @@ let
   gigawallet_bin = pkgs.buildGoModule {
   pname = "gigawallet";
   version = "1.0.1";
+  go = pkgs.go_1_24;
 
   src = pkgs.fetchgit {
     url = "https://github.com/dogecoinfoundation/gigawallet.git";
@@ -14,7 +15,6 @@ let
   vendorHash = "sha256-mW5SStSabjWIlLWarI0OfyCTRWRQnEbk2BXabJCJ2h4";
 
   nativeBuildInputs = [
-    pkgs.go_1_24
     pkgs.pkg-config
   ];
 
